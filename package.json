@@ -6,6 +6,9 @@
   "scripts": {
     "sync:targi": "ts-node src/scripts/syncTargi.ts",
     "sync:produkty": "ts-node src/scripts/syncProducts.ts",
+    "hall:list": "ts-node src/scripts/manageHalls.ts list",
+    "hall:create": "ts-node src/scripts/manageHalls.ts create",
+    "hall:import": "ts-node src/scripts/manageHalls.ts import",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

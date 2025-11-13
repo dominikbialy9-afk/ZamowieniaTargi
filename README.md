@@ -32,3 +32,47 @@ Narzędzie wspierające obsługę zamówień podczas targów. Repozytorium zawie
    W terminalu wyświetlana jest krótka tabela podglądowa pierwszych rekordów.
 
 Skrypty można wykorzystywać cyklicznie (np. jako zadania cron), by odświeżać stany wydarzeń, targów oraz katalog produktów bezpośrednio z Airtable.
+
+## Rejestr hal i baza stoisk
+
+Po zsynchronizowaniu wydarzeń możesz lokalnie rejestrować hale oraz przypisaną do nich bazę stoisk, aby mieć miejsce na szybkie wklejenie danych z innych systemów.
+
+1. **Lista hal**
+
+   ```bash
+   npm run hall:list
+   ```
+
+   Komenda wypisze wszystkie dotychczas utworzone hale wraz z informacją o pliku roboczym CSV.
+
+2. **Utworzenie hali i arkusza wejściowego**
+
+   ```bash
+   npm run hall:create -- --eventId=EVT123 --eventName="Warsaw Build 2025" --hall="Hala F"
+   ```
+
+   Polecenie zapisze definicję hali w `data/halls.json`, utworzy katalog `data/halls/<event-hala>/` oraz plik `booths.csv` z nagłówkami:
+
+   | Kolumna              | Opis                                 |
+   | -------------------- | ------------------------------------ |
+   | Nazwa targów        | Nazwa wydarzenia                     |
+   | Hala                | Oznaczenie hali                      |
+   | Numer zamówienia    | Numer referencyjny zamówienia        |
+   | Numer stoiska       | Numer stoiska / pola                 |
+   | Nazwa wystawcy      | Nazwa firmy                          |
+   | Status ogólny       | Główny status                        |
+   | Status szczegółowy  | Dodatkowe informacje o statusie      |
+   | NIP                 | Identyfikator podatkowy wystawcy     |
+   | Osoba kontaktowa    | Imię i nazwisko osoby odpowiedzialnej|
+   | Adres e-mail        | Kontakt mailowy                      |
+
+   Plik CSV można otworzyć w Excelu i wypełnić ręcznie lub poprzez wklejanie z innego systemu.
+
+3. **Import/odświeżenie bazy stoisk**
+
+   ```bash
+   npm run hall:import -- --hall=warsaw-build-2025-hala-f
+   # opcjonalnie --from=ścieżka.csv --delimiter=; jeśli używasz innego pliku
+   ```
+
+   Skrypt sparsuje wskazany plik (obsługuje nagłówki oraz delimitery `,`, `;`, `\t`), ujednolici wartości i zapisze wynik w `data/halls/<hall>/booths.json`. Plik JSON zawiera metadane importu oraz tablicę stoisk gotową do dalszego przetwarzania przez backend lub panel www.

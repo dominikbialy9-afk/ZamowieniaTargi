@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import { AirtableClient } from '../airtable/client';
 import { AirtableRecord } from '../airtable/types';
@@ -107,9 +107,9 @@ async function run() {
   };
 
   const outputDir = path.resolve('data');
-  mkdirSync(outputDir, { recursive: true });
+  fs.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'produkty.json');
-  writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
+  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
 
   console.log(`Pobrano ${normalized.length} rekordów z tabeli "${tableName}".`);
   console.log(`Dane zapisano w ${outputPath}.`);
