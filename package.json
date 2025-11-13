@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "sync:targi": "ts-node src/scripts/syncTargi.ts",
+    "sync:produkty": "ts-node src/scripts/syncProducts.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
