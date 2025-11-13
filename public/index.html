@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zamówienia Targi – wybierz wydarzenie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body data-page="events">
+    <div class="app-shell wizard-shell">
+      <header class="app-header">
+        <div class="header-left">
+          <a href="/app/events" class="logo">Zamówienia Targi</a>
+          <nav class="wizard-steps" id="wizard-steps" aria-label="Etapy zamówienia"></nav>
+        </div>
+        <div class="header-actions">
+          <div class="user-pill" id="user-pill">Ładowanie użytkownika…</div>
+          <button class="secondary" id="logout-btn" type="button">Wyloguj</button>
+        </div>
+      </header>
+
+      <main class="wizard-content">
+        <section class="card">
+          <header class="panel-header">
+            <div>
+              <h1>Wybierz targi</h1>
+              <p>Każde zamówienie rozpoczyna się od wyboru wydarzenia. Filtruj po branży lub sezonie.</p>
+            </div>
+            <label class="field">
+              <span>Branża</span>
+              <select id="event-category-filter">
+                <option value="all">Wszystkie</option>
+              </select>
+            </label>
+          </header>
+          <div class="cards-grid" id="events-grid" aria-live="polite"></div>
+          <footer class="panel-footer">
+            <button class="primary" id="events-continue" type="button" disabled>Przejdź do wyboru hali</button>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/ui/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "zamowienia-targi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "sync:targi": "ts-node src/scripts/syncTargi.ts",
+    "sync:produkty": "ts-node src/scripts/syncProducts.ts",
+    "hall:list": "ts-node src/scripts/manageHalls.ts list",
+    "hall:create": "ts-node src/scripts/manageHalls.ts create",
+    "hall:import": "ts-node src/scripts/manageHalls.ts import",
+    "user:list": "ts-node src/scripts/manageUsers.ts list",
+    "user:pending": "ts-node src/scripts/manageUsers.ts pending",
+    "user:approve": "ts-node src/scripts/manageUsers.ts approve",
+    "user:disable": "ts-node src/scripts/manageUsers.ts disable",
+    "user:set-role": "ts-node src/scripts/manageUsers.ts set-role",
+    "user:bootstrap": "ts-node src/scripts/manageUsers.ts bootstrap",
+    "auth:server": "ts-node src/server/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

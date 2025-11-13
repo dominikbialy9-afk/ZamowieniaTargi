@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zamówienia Targi – konfiguracja produktów</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body data-page="products">
+    <div class="app-shell wizard-shell">
+      <header class="app-header">
+        <div class="header-left">
+          <a href="/app/events" class="logo">Zamówienia Targi</a>
+          <nav class="wizard-steps" id="wizard-steps" aria-label="Etapy zamówienia"></nav>
+        </div>
+        <div class="header-actions">
+          <div class="user-pill" id="user-pill">Ładowanie użytkownika…</div>
+          <button class="secondary" id="logout-btn" type="button">Wyloguj</button>
+        </div>
+      </header>
+
+      <main class="wizard-content">
+        <section class="card">
+          <header class="panel-header">
+            <div>
+              <h1>Konfiguruj produkty</h1>
+              <p>Zmieniaj walutę, cennik oraz dodawaj rabaty dla poszczególnych pozycji.</p>
+            </div>
+            <div class="inline-fields">
+              <label class="field">
+                <span>Waluta</span>
+                <select id="currency-select">
+                  <option value="PLN">PLN</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Cennik</span>
+                <select id="price-list-select">
+                  <option value="A">Cennik A</option>
+                  <option value="B">Cennik B</option>
+                  <option value="C">Cennik C</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Szukaj produktu</span>
+                <input type="search" id="product-search" placeholder="Nazwa lub kategoria" />
+              </label>
+            </div>
+          </header>
+          <div class="selection-summary" id="booth-summary"></div>
+          <div class="product-grid" id="product-grid"></div>
+          <footer class="panel-footer">
+            <button class="secondary" type="button" onclick="window.location.href='/app/booth'">Wstecz</button>
+            <button class="primary" id="product-continue" type="button">Przejdź do podsumowania</button>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/ui/app.js"></script>
+  </body>
+</html>

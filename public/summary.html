@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zamówienia Targi – podsumowanie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body data-page="summary">
+    <div class="app-shell wizard-shell">
+      <header class="app-header">
+        <div class="header-left">
+          <a href="/app/events" class="logo">Zamówienia Targi</a>
+          <nav class="wizard-steps" id="wizard-steps" aria-label="Etapy zamówienia"></nav>
+        </div>
+        <div class="header-actions">
+          <div class="user-pill" id="user-pill">Ładowanie użytkownika…</div>
+          <button class="secondary" id="logout-btn" type="button">Wyloguj</button>
+        </div>
+      </header>
+
+      <main class="wizard-content">
+        <section class="card">
+          <header class="panel-header">
+            <div>
+              <h1>Podsumowanie zamówienia</h1>
+              <p>Zweryfikuj pozycje, dodaj uwagi i wygeneruj ofertę PDF.</p>
+            </div>
+            <button class="ghost" type="button" onclick="window.location.href='/app/products'">Edytuj produkty</button>
+          </header>
+          <div class="selection-summary" id="summary-selection"></div>
+
+          <div class="order-preview">
+            <header>
+              <h2>Podgląd zamówienia</h2>
+              <span id="order-currency"></span>
+            </header>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Produkt</th>
+                    <th>Ilość</th>
+                    <th>Rabat</th>
+                    <th>Cena jedn.</th>
+                    <th>Wartość</th>
+                  </tr>
+                </thead>
+                <tbody id="order-preview-body"></tbody>
+              </table>
+            </div>
+            <div class="totals" id="order-totals"></div>
+          </div>
+
+          <div class="notes-grid">
+            <label class="field">
+              <span>Uwagi do zamówienia</span>
+              <textarea id="order-notes" rows="4" placeholder="np. dostawa nocna, dodatkowe wymagania"></textarea>
+            </label>
+            <div class="card subtle">
+              <h3>Bieżące zamówienia</h3>
+              <div class="table-wrapper mini">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nr</th>
+                      <th>Stoisko</th>
+                      <th>Wystawca</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="orders-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <footer class="panel-footer">
+            <button class="secondary" type="button" onclick="window.location.href='/app/products'">Wstecz</button>
+            <div class="actions">
+              <button class="ghost" id="save-order" type="button">Zapisz roboczo</button>
+              <button class="primary" id="pdf-btn" type="button">Generuj ofertę PDF</button>
+            </div>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/ui/app.js"></script>
+  </body>
+</html>
