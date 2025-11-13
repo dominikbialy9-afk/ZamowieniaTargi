@@ -8,6 +8,26 @@ declare module 'node:path' {
   export = mod;
 }
 
+declare module 'node:crypto' {
+  const mod: any;
+  export = mod;
+}
+
+declare module 'node:http' {
+  const mod: any;
+  export = mod;
+}
+
+declare module 'node:https' {
+  const mod: any;
+  export = mod;
+}
+
+declare module 'node:url' {
+  const mod: any;
+  export = mod;
+}
+
 declare namespace NodeJS {
   interface ErrnoException extends Error {
     code?: string;
@@ -20,6 +40,9 @@ declare const process: {
   cwd(): string;
   exitCode?: number;
 };
+
+declare const Buffer: any;
+type Buffer = any;
 
 declare module 'dotenv' {
   export interface DotenvConfigOptions {

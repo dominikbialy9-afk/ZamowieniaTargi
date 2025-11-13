@@ -4,7 +4,7 @@ Narzędzie wspierające obsługę zamówień podczas targów. Repozytorium zawie
 
 ## Konfiguracja środowiska
 
-1. Utwórz plik `.env` (nie jest dodawany do repozytorium) i zdefiniuj w nim co najmniej token API:
+1. Utwórz plik `.env` (nie jest dodawany do repozytorium) i zdefiniuj w nim co najmniej token API oraz dane logowania do Microsoft (szczegóły poniżej):
 
    ```bash
    AIRTABLE_TOKEN=patXXXXXXXXXXXX
@@ -12,6 +12,15 @@ Narzędzie wspierające obsługę zamówień podczas targów. Repozytorium zawie
    AIRTABLE_BASE_ID=appDg7Emi7rYsjFZ2
    AIRTABLE_TABLE_NAME=Tabela Targi
    AIRTABLE_PRODUCTS_TABLE_NAME=Produkty
+
+   # Konfiguracja logowania Microsoft (Azure AD)
+   AZURE_AD_TENANT_ID=<tenant-guid>
+   AZURE_AD_CLIENT_ID=<app-id>
+   AZURE_AD_CLIENT_SECRET=<app-secret>
+   AZURE_AD_REDIRECT_URI=http://localhost:4300/auth/callback
+   ALLOWED_EMAIL_DOMAIN=warsawexpo.eu
+   SESSION_SECRET=losowe_haslo_min_32_znaki
+   SESSION_TTL_SECONDS=28800
    ```
 
 2. Zainstaluj zależności i uruchom wybrane synchronizacje:
@@ -32,6 +41,28 @@ Narzędzie wspierające obsługę zamówień podczas targów. Repozytorium zawie
    W terminalu wyświetlana jest krótka tabela podglądowa pierwszych rekordów.
 
 Skrypty można wykorzystywać cyklicznie (np. jako zadania cron), by odświeżać stany wydarzeń, targów oraz katalog produktów bezpośrednio z Airtable.
+
+## Logowanie Outlook/Microsoft i role użytkowników
+
+System obsługuje logowanie wyłącznie służbowymi adresami `@warsawexpo.eu` poprzez konto Microsoft (Azure AD). Schemat działania:
+
+1. **Rejestracja aplikacji w Azure AD** – utwórz aplikację typu "Web" i skonfiguruj redirect `http://localhost:4300/auth/callback`. Nadaj uprawnienia `openid profile email offline_access`.
+2. **Konfiguracja `.env`** – uzupełnij zmienne `AZURE_AD_*`, `SESSION_SECRET` oraz opcjonalnie `ALLOWED_EMAIL_DOMAIN` (domyślnie `warsawexpo.eu`).
+3. **Bootstrap pierwszego administratora** – przed rozpoczęciem logowania dodaj konto administratorskie CLI:
+
+   ```bash
+   npm run user:bootstrap -- --email=twoj.adres@warsawexpo.eu --name="Imię Nazwisko" --role=administrator
+   ```
+
+4. **Uruchom serwer logowania** – komenda `npm run auth:server` startuje prosty serwer HTTP z zakładką logowania (http://localhost:4300). Użytkownik klika „Zaloguj przez Microsoft”, przechodzi przez okno Outlook/Microsoft i wraca do aplikacji.
+5. **Akceptacja kont** – nowe konta trafiają do statusu `pending`. Administrator potwierdza dostęp i rolę przez:
+
+   - CLI: `npm run user:pending`, `npm run user:approve -- --id=<UUID> --role=sprzedawca`.
+   - API: zalogowany administrator wywołuje `POST /admin/users/<id>/approve` lub `.../disable`, `.../role` (serwer obsługuje JSON i cookie sesyjne).
+
+6. **Role** – dostępne role: `administrator`, `sprzedawca`, `magazynier`, `koordynator`. Administrator może zmieniać uprawnienia (`npm run user:set-role -- --id=... --role=koordynator`) lub wygaszać konta (`npm run user:disable -- --id=...`).
+
+Serwer logowania wystawia też endpoint `GET /api/session`, który pozwala front-endowi sprawdzić czy użytkownik ma ważną sesję oraz jaką rolę posiada.
 
 ## Rejestr hal i baza stoisk
 
