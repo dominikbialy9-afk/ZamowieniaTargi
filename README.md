@@ -4,7 +4,7 @@ Narzędzie wspierające obsługę zamówień podczas targów. Repozytorium zawie
 
 ## Konfiguracja środowiska
 
-1. Utwórz plik `.env` (nie jest dodawany do repozytorium) i zdefiniuj w nim co najmniej token API oraz dane logowania do Microsoft (szczegóły poniżej):
+1. Skopiuj plik `.env.example` do `.env` (plik produkcyjny nie jest dodawany do repozytorium) i uzupełnij co najmniej token API oraz dane logowania do Microsoft (szczegóły poniżej):
 
    ```bash
    AIRTABLE_TOKEN=patXXXXXXXXXXXX
@@ -22,6 +22,8 @@ Narzędzie wspierające obsługę zamówień podczas targów. Repozytorium zawie
    SESSION_SECRET=losowe_haslo_min_32_znaki
    SESSION_TTL_SECONDS=28800
    ```
+
+   W pliku `.env.example` znajdziesz komplet wszystkich wspieranych zmiennych – wystarczy go skopiować i podmienić wartości na własne.
 
 2. Zainstaluj zależności i uruchom wybrane synchronizacje:
 
@@ -79,6 +81,8 @@ npm run auth:server
 ```
 
 Do testu potrzebny jest plik `.env` z konfiguracją Microsoft/Airtable (jak w sekcji „Konfiguracja”). W trybie demo wystarczy `SESSION_SECRET` oraz zmienna `DEMO_MODE=true`, aby backend udostępnił widoki bez logowania.
+
+> ⚠️ Samo otwarcie plików HTML w przeglądarce (np. `public/index.html`) nie zadziała – każda strona ładuje skrypt z adresu `/ui/app.js`, który jest serwowany tylko przez uruchomiony backend. Dlatego przyciski w statycznym podglądzie będą martwe do czasu startu `npm run auth:server` z poprawnym `.env`.
 
 ### Etapy konfiguratora
 
