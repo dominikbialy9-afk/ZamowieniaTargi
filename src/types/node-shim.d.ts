@@ -3,6 +3,10 @@ declare module 'node:fs' {
   export = mod;
 }
 
+declare module 'node:fs/promises' {
+  export const readFile: any;
+}
+
 declare module 'node:path' {
   const mod: any;
   export = mod;
@@ -43,6 +47,8 @@ declare const process: {
 
 declare const Buffer: any;
 type Buffer = any;
+
+declare const __dirname: string;
 
 declare module 'dotenv' {
   export interface DotenvConfigOptions {

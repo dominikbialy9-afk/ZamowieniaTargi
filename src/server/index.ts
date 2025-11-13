@@ -1,9 +1,11 @@
 import crypto from 'node:crypto';
 import http from 'node:http';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { buildMicrosoftAuthorizationUrl, exchangeCodeForToken, verifyMicrosoftIdToken } from '../auth/microsoft';
 import { buildSessionCookie, clearSessionCookie, createSessionToken, verifySessionToken } from '../auth/session';
-import { getAllowedEmailDomain, loadMicrosoftConfig, loadSessionConfig } from '../config/env';
+import { getAllowedEmailDomain, isDemoModeEnabled, loadMicrosoftConfig, loadSessionConfig } from '../config/env';
 import {
   approveUser,
   disableUser,
@@ -21,6 +23,17 @@ type HttpResponse = any;
 const microsoftConfig = loadMicrosoftConfig();
 const sessionConfig = loadSessionConfig();
 const allowedDomain = getAllowedEmailDomain();
+const publicDir = path.resolve(__dirname, '../../public');
+const demoMode = isDemoModeEnabled();
+const demoUser: UserAccount = {
+  id: 'demo-user',
+  email: `demo@${allowedDomain}`,
+  displayName: 'Podgląd demo',
+  role: 'administrator',
+  status: 'active',
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
+};
 const loginStates = new Map<string, { nonce: string; createdAt: number }>();
 const server = http.createServer(requestHandler);
 const port = Number.parseInt(process.env.PORT ?? '4300', 10);
@@ -35,6 +48,10 @@ async function requestHandler(req: HttpRequest, res: HttpResponse): Promise<void
 
   if (method === 'GET' && url.pathname === '/') {
     await handleHome(req, res);
+    return;
+  }
+  if (method === 'GET' && (url.pathname === '/app' || url.pathname === '/app/')) {
+    await handleApp(req, res);
     return;
   }
   if (method === 'GET' && url.pathname === '/auth/login') {
@@ -57,6 +74,10 @@ async function requestHandler(req: HttpRequest, res: HttpResponse): Promise<void
     await handleAdminRoute(req, res, method, url);
     return;
   }
+  if (method === 'GET' && url.pathname.startsWith('/ui/')) {
+    await handleStaticAsset(res, url.pathname.substring(4));
+    return;
+  }
 
   res.statusCode = 404;
   res.end('Not found');
@@ -64,11 +85,27 @@ async function requestHandler(req: HttpRequest, res: HttpResponse): Promise<void
 
 async function handleHome(req: HttpRequest, res: HttpResponse): Promise<void> {
   const sessionUser = await resolveSessionUser(req);
-  const body = sessionUser
-    ? `<h1>Panel Zamówienia Targi</h1><p>Zalogowano jako <strong>${escapeHtml(sessionUser.displayName)}</strong> (${sessionUser.role}).</p><form method="post" action="/api/logout"><button type="submit">Wyloguj</button></form>`
-    : `<h1>Panel Zamówienia Targi</h1><p>Musisz się zalogować służbowym adresem @${allowedDomain}.</p><a href="/auth/login">Zaloguj przez Microsoft</a>`;
+  if (sessionUser) {
+    await serveIndexHtml(res);
+    return;
+  }
+
+  const body =
+    `<h1>Panel Zamówienia Targi</h1><p>Musisz się zalogować służbowym adresem @${allowedDomain}.</p>` +
+    '<a href="/auth/login">Zaloguj przez Microsoft</a>';
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end(body);
+}
+
+async function handleApp(req: HttpRequest, res: HttpResponse): Promise<void> {
+  const sessionUser = await resolveSessionUser(req);
+  if (!sessionUser) {
+    res.statusCode = 302;
+    res.setHeader('Location', '/');
+    res.end();
+    return;
+  }
+  await serveIndexHtml(res);
 }
 
 async function handleLogin(res: HttpResponse): Promise<void> {
@@ -203,12 +240,12 @@ async function handleAdminRoute(
 
 async function resolveSessionUser(req: HttpRequest): Promise<UserAccount | undefined> {
   const token = extractSessionToken(req);
-  if (!token) return undefined;
+  if (!token) return demoMode ? demoUser : undefined;
   const payload = verifySessionToken(sessionConfig, token);
-  if (!payload) return undefined;
+  if (!payload) return demoMode ? demoUser : undefined;
   const user = await getUserById(payload.userId);
   if (!user || user.status !== 'active') {
-    return undefined;
+    return demoMode ? demoUser : undefined;
   }
   return user;
 }
@@ -268,4 +305,44 @@ function escapeHtml(value: string): string {
         return char;
     }
   });
+}
+
+async function serveIndexHtml(res: HttpResponse): Promise<void> {
+  try {
+    const html = await readFile(path.join(publicDir, 'index.html'), 'utf8');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.statusCode = 200;
+    res.end(html);
+  } catch (error) {
+    res.statusCode = 500;
+    res.end(`Brak pliku interfejsu: ${(error as Error).message}`);
+  }
+}
+
+async function handleStaticAsset(res: HttpResponse, relativePath: string): Promise<void> {
+  const normalized = path.normalize(relativePath).replace(/^[/\\]+/, '');
+  const fullPath = path.join(publicDir, normalized);
+  if (!fullPath.startsWith(publicDir)) {
+    res.statusCode = 403;
+    res.end('Forbidden');
+    return;
+  }
+  try {
+    const data = await readFile(fullPath);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', getContentType(fullPath));
+    res.end(data);
+  } catch (error) {
+    res.statusCode = 404;
+    res.end('Asset not found');
+  }
+}
+
+function getContentType(filePath: string): string {
+  if (filePath.endsWith('.css')) return 'text/css; charset=utf-8';
+  if (filePath.endsWith('.js')) return 'application/javascript; charset=utf-8';
+  if (filePath.endsWith('.png')) return 'image/png';
+  if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) return 'image/jpeg';
+  if (filePath.endsWith('.svg')) return 'image/svg+xml';
+  return 'application/octet-stream';
 }

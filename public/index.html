@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zamówienia Targi – Konfigurator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <header class="app-header">
+        <div>
+          <span class="badge badge-live">Konfigurator LIVE</span>
+          <span class="header-title">Panel Zamówień</span>
+        </div>
+        <div class="header-actions">
+          <div class="user-pill" id="user-pill">Ładowanie użytkownika…</div>
+          <button class="secondary" id="logout-btn" type="button">Wyloguj</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar" aria-label="Filtry i zamówienia">
+          <div class="card filters-card">
+            <h2>Filtry</h2>
+            <label class="field">
+              <span>Nazwa firmy</span>
+              <input type="text" id="filter-company" placeholder="Szukaj po nazwie" />
+            </label>
+            <label class="field">
+              <span>NIP</span>
+              <input type="text" id="filter-nip" placeholder="np. 5250001011" />
+            </label>
+            <label class="field">
+              <span>Nr zamówienia</span>
+              <input type="text" id="filter-order" placeholder="np. F-104" />
+            </label>
+            <label class="field">
+              <span>Status</span>
+              <select id="filter-status">
+                <option value="all">Wszystkie</option>
+                <option value="nowe">Nowe</option>
+                <option value="w-trakcie">W trakcie</option>
+                <option value="zaakceptowane">Zaakceptowane</option>
+              </select>
+            </label>
+            <button id="filter-btn" class="primary" type="button">Szukaj</button>
+          </div>
+
+          <div class="card orders-card">
+            <header>
+              <h2>Zamówienia</h2>
+              <button class="icon-button" id="refresh-orders" type="button" aria-label="Odśwież">⟳</button>
+            </header>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nr</th>
+                    <th>Stoisko</th>
+                    <th>Wystawca</th>
+                    <th>NIP</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </aside>
+
+        <main class="workspace">
+          <div class="tabs">
+            <button class="tab active" data-tab="events">Wydarzenia</button>
+            <button class="tab" data-tab="booths">Zestaw stoisk</button>
+            <button class="tab" data-tab="products">Konfigurator</button>
+            <button class="tab" data-tab="summary">Podsumowanie</button>
+          </div>
+
+          <section class="panel" data-panel="events">
+            <div class="panel-header">
+              <div>
+                <h2>Wybierz wydarzenie</h2>
+                <p>Każda hala ma własny magazyn i konfigurację produktów.</p>
+              </div>
+              <label class="field">
+                <span>Branża</span>
+                <select id="event-category-filter">
+                  <option value="all">Wszystkie</option>
+                </select>
+              </label>
+            </div>
+            <div class="cards-grid" id="events-grid"></div>
+          </section>
+
+          <section class="panel hidden" data-panel="booths">
+            <div class="panel-header">
+              <div>
+                <h2>Baza stoisk</h2>
+                <p>Podłącz halę i wybierz stoisko do dalszej konfiguracji.</p>
+              </div>
+              <label class="field">
+                <span>Hala</span>
+                <select id="hall-select"></select>
+              </label>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nr zamówienia</th>
+                    <th>Stoisko</th>
+                    <th>Wystawca</th>
+                    <th>NIP</th>
+                    <th>Status</th>
+                    <th>Osoba kontaktowa</th>
+                  </tr>
+                </thead>
+                <tbody id="booth-table"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel hidden" data-panel="products">
+            <div class="panel-header">
+              <div>
+                <h2>Konfigurator produktów</h2>
+                <p>Dodaj produkty do zamówienia i wybierz cennik.</p>
+              </div>
+              <div class="inline-fields">
+                <label class="field">
+                  <span>Waluta</span>
+                  <select id="currency-select">
+                    <option value="PLN">PLN</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Cennik</span>
+                  <select id="price-list-select">
+                    <option value="A">Cennik A</option>
+                    <option value="B">Cennik B</option>
+                    <option value="C">Cennik C</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Filtr</span>
+                  <input id="product-search" type="search" placeholder="Nazwa lub kategoria" />
+                </label>
+              </div>
+            </div>
+            <div class="product-grid" id="product-grid"></div>
+          </section>
+
+          <section class="panel hidden" data-panel="summary">
+            <div class="panel-header">
+              <div>
+                <h2>Podsumowanie zamówienia</h2>
+                <p>Sprawdź wartości i zapisz do PDF.</p>
+              </div>
+              <button class="secondary" id="download-offer" type="button">Eksportuj PDF</button>
+            </div>
+            <div class="summary-grid">
+              <div class="card">
+                <h3>Dane wystawcy</h3>
+                <form id="exhibitor-form" class="form-grid">
+                  <label class="field">
+                    <span>Nazwa</span>
+                    <input type="text" id="exhibitor-name" required />
+                  </label>
+                  <label class="field">
+                    <span>NIP</span>
+                    <input type="text" id="exhibitor-nip" required />
+                  </label>
+                  <label class="field">
+                    <span>Osoba kontaktowa</span>
+                    <input type="text" id="exhibitor-contact" />
+                  </label>
+                  <label class="field">
+                    <span>E-mail</span>
+                    <input type="email" id="exhibitor-email" />
+                  </label>
+                </form>
+              </div>
+              <div class="card">
+                <h3>Lista pozycji</h3>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Produkt</th>
+                        <th>Ilość</th>
+                        <th>Cena</th>
+                        <th>Wartość</th>
+                      </tr>
+                    </thead>
+                    <tbody id="summary-lines"></tbody>
+                    <tfoot>
+                      <tr>
+                        <td colspan="3">Razem</td>
+                        <td id="summary-total">0 PLN</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="summary-panel" aria-label="Podgląd zamówienia">
+          <div class="card">
+            <h2>Karta wystawcy</h2>
+            <div class="exhibitor-card" id="exhibitor-card"></div>
+            <div class="actions">
+              <button class="primary" id="save-order" type="button">Zapisz i kontynuuj</button>
+              <button class="secondary" id="reset-order" type="button">Wyczyść</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Lista produktów</h2>
+            <div class="table-wrapper small">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Produkt</th>
+                    <th>Ilość</th>
+                    <th>Cena</th>
+                  </tr>
+                </thead>
+                <tbody id="cart-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <script src="/ui/app.js" type="module"></script>
+  </body>
+</html>

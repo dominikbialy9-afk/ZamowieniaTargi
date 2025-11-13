@@ -64,6 +64,29 @@ System obsługuje logowanie wyłącznie służbowymi adresami `@warsawexpo.eu` p
 
 Serwer logowania wystawia też endpoint `GET /api/session`, który pozwala front-endowi sprawdzić czy użytkownik ma ważną sesję oraz jaką rolę posiada.
 
+> 💡 **Tryb demo**: podczas lokalnego prototypowania możesz ustawić `DEMO_MODE=true` w `.env`, aby interfejs WWW był dostępny bez logowania (aplikacja poda się jako administrator w trybie tylko do podglądu).
+
+## Interfejs WWW (konfigurator zamówień)
+
+Zakładka `http://localhost:4300/app` udostępnia pierwszą wersję graficznego panelu, który odzwierciedla układ z makiet: filtry po lewej, główny konfigurator na środku oraz karta wystawcy po prawej. Strona ładuje bieżącą sesję przez `GET /api/session`, dzięki czemu w nagłówku widać zalogowanego użytkownika.
+
+### Jak uruchomić
+
+```bash
+DEMO_MODE=true \  # opcjonalnie, by pominąć logowanie
+npm run auth:server
+# następnie otwórz http://localhost:4300/ i przejdź do zakładki
+```
+
+### Dostępne widoki
+
+- **Filtry i tabela zamówień** – szybkie wyszukiwanie po nazwie firmy, NIP‑ie, numerze zamówienia oraz statusie. Wynik prezentowany jest w tabeli „Zamówienia”, którą można odświeżyć przyciskiem.
+- **Wydarzenia i hale** – kafle wydarzeń z opisem, datą i ilustracją, selektor branży oraz zakładka „Zestaw stoisk” pokazująca przypisane hale i rekordy (nazwa targów, hala, numer zamówienia, stoisko, wystawca, statusy, kontakt, NIP).
+- **Konfigurator produktów** – karta z filtrem tekstowym, wyborem waluty (PLN/EUR) oraz selektorem cennika A/B/C. Każdy produkt ma kontrolkę +/- do ustawiania ilości, a ceny przeliczają się zgodnie z cennikiem oraz walutą.
+- **Podsumowanie i karta wystawcy** – formularz danych wystawcy (nazwa, NIP, osoba kontaktowa, e-mail), lista pozycji zamówienia oraz tabela sumaryczna. Obok widać „Kartę wystawcy” z informacjami o stoisku i kontakcie oraz mini tabelę z produktami.
+
+Przyciski „Eksportuj PDF”, „Zapisz i kontynuuj” oraz komunikaty toastowe działają jako placeholdery – backend można do nich podpiąć w kolejnych iteracjach. Aktualnie wykorzystywany jest przykładowy zestaw wydarzeń, stoisk i produktów, aby szybko zweryfikować układ i przepływ pracy.
+
 ## Rejestr hal i baza stoisk
 
 Po zsynchronizowaniu wydarzeń możesz lokalnie rejestrować hale oraz przypisaną do nich bazę stoisk, aby mieć miejsce na szybkie wklejenie danych z innych systemów.

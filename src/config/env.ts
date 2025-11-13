@@ -43,6 +43,10 @@ export function loadSessionConfig(): SessionConfig {
   return { secret, ttlSeconds, cookieName, sameSite, secureCookies };
 }
 
+export function isDemoModeEnabled(): boolean {
+  return parseBoolean(process.env.DEMO_MODE, false);
+}
+
 export function requireEnv(key: string): string {
   const value = process.env[key];
   if (!value) {
