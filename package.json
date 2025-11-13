@@ -1,0 +1,15 @@
+{
+  "name": "zamowienia-targi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "sync:targi": "ts-node src/scripts/syncTargi.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
