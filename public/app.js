@@ -1,4 +1,13 @@
 const EURO_RATE = 4.35;
+const STORAGE_KEY = 'zt-wizard-state-v1';
+
+const wizardSteps = [
+  { id: 'events', label: 'Targi', path: '/app/events' },
+  { id: 'halls', label: 'Hala', path: '/app/halls' },
+  { id: 'booth', label: 'Stoisko', path: '/app/booth' },
+  { id: 'products', label: 'Produkty', path: '/app/products' },
+  { id: 'summary', label: 'Podsumowanie', path: '/app/summary' },
+];
 
 const events = [
   {
@@ -68,6 +77,28 @@ const halls = [
     id: 'hala-f-2025',
     eventId: 'forum-bhp-2025',
     name: 'Hala F',
+    surface: '12 000 m²',
+    storage: 'Magazyn 1',
+  },
+  {
+    id: 'hala-d-2024',
+    eventId: 'forum-bhp-2024',
+    name: 'Hala D',
+    surface: '9 200 m²',
+    storage: 'Magazyn 2',
+  },
+  {
+    id: 'hala-a-2025',
+    eventId: 'beautydays-2025',
+    name: 'Hala A',
+    surface: '11 100 m²',
+    storage: 'Magazyn 4',
+  },
+];
+
+const hallBooths = [
+  {
+    hallId: 'hala-f-2025',
     booths: [
       {
         id: 'f145',
@@ -102,9 +133,7 @@ const halls = [
     ],
   },
   {
-    id: 'hala-d-2024',
-    eventId: 'forum-bhp-2024',
-    name: 'Hala D',
+    hallId: 'hala-d-2024',
     booths: [
       {
         id: 'd110',
@@ -129,9 +158,7 @@ const halls = [
     ],
   },
   {
-    id: 'hala-a-2025',
-    eventId: 'beautydays-2025',
-    name: 'Hala A',
+    hallId: 'hala-a-2025',
     booths: [
       {
         id: 'a010',
@@ -225,42 +252,72 @@ const products = [
 ];
 
 const previousOrders = [
-  { id: 'ZT-101', booth: 'B12', exhibitor: '3D Phoenix', nip: '5252651472', status: 'W trakcie' },
-  { id: 'ZT-089', booth: 'C08', exhibitor: 'Habisoft', nip: '5260000982', status: 'Zaakceptowane' },
-  { id: 'ZT-076', booth: 'A01', exhibitor: 'SafeWork', nip: '5210084421', status: 'Nowe' },
-  { id: 'ZT-055', booth: 'A05', exhibitor: 'Glow Studio', nip: '7010039281', status: 'W trakcie' },
+  { id: 'ZT-101', booth: 'B12', exhibitor: '3D Phoenix', status: 'W trakcie' },
+  { id: 'ZT-089', booth: 'C08', exhibitor: 'Habisoft', status: 'Zaakceptowane' },
+  { id: 'ZT-076', booth: 'A01', exhibitor: 'SafeWork', status: 'Nowe' },
+  { id: 'ZT-055', booth: 'A05', exhibitor: 'Glow Studio', status: 'W trakcie' },
 ];
 
-const state = {
-  selectedEventId: events[0].id,
-  selectedHallId: halls[0].id,
-  selectedBoothId: halls[0].booths[0].id,
-  priceList: 'A',
-  currency: 'PLN',
-  productSearch: '',
-  cart: {},
-  exhibitor: {
-    name: halls[0].booths[0].exhibitor,
-    nip: halls[0].booths[0].nip,
-    contact: halls[0].booths[0].contact.name,
-    email: halls[0].booths[0].contact.email,
-  },
-  filters: {
-    company: '',
-    nip: '',
-    order: '',
-    status: 'all',
-  },
-};
+let wizardState = loadWizardState();
 
 init();
 
+function loadWizardState() {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.warn('Nie udało się odczytać stanu', error);
+  }
+  return {
+    eventId: undefined,
+    hallId: undefined,
+    boothId: undefined,
+    currency: 'PLN',
+    priceList: 'A',
+    cart: {},
+    notes: '',
+  };
+}
+
+function saveWizardState(newState) {
+  wizardState = { ...wizardState, ...newState };
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(wizardState));
+}
+
 async function init() {
   await loadSession();
-  bindTabNavigation();
-  bindInputs();
-  populateEventCategories();
-  renderAll();
+  renderStepper();
+  const page = document.body.dataset.page;
+  switch (page) {
+    case 'events':
+      initEventsPage();
+      break;
+    case 'halls':
+      initHallsPage();
+      break;
+    case 'booth':
+      initBoothPage();
+      break;
+    case 'products':
+      initProductsPage();
+      break;
+    case 'summary':
+      initSummaryPage();
+      break;
+    default:
+      break;
+  }
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (error) {
+      console.warn('Brak API sesji, tryb demo?', error);
+    }
+    window.location.href = '/';
+  });
 }
 
 async function loadSession() {
@@ -274,96 +331,43 @@ async function loadSession() {
       pill.textContent = 'Gość (tryb podglądu)';
     }
   } catch (error) {
-    console.error('Session error', error);
+    const pill = document.getElementById('user-pill');
+    if (pill) {
+      pill.textContent = 'Gość (podgląd offline)';
+    }
   }
 }
 
-function bindTabNavigation() {
-  const tabs = document.querySelectorAll('.tab');
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((btn) => btn.classList.toggle('active', btn === tab));
-      document
-        .querySelectorAll('.panel')
-        .forEach((panel) => panel.classList.toggle('hidden', panel.dataset.panel !== tab.dataset.tab));
-    });
+function renderStepper() {
+  const container = document.getElementById('wizard-steps');
+  if (!container) return;
+  const current = document.body.dataset.page;
+  container.innerHTML = wizardSteps
+    .map((step) => {
+      const position = wizardSteps.findIndex((s) => s.id === step.id);
+      const currentIndex = wizardSteps.findIndex((s) => s.id === current);
+      const status =
+        position < currentIndex
+          ? 'completed'
+          : position === currentIndex
+          ? 'active'
+          : 'upcoming';
+      return `<a href="${step.path}" class="wizard-step ${status}"><span>${step.label}</span></a>`;
+    })
+    .join('');
+}
+
+function initEventsPage() {
+  populateEventFilter();
+  renderEventsGrid();
+  document.getElementById('events-continue').addEventListener('click', () => {
+    window.location.href = '/app/halls';
   });
 }
 
-function bindInputs() {
-  document.getElementById('logout-btn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.reload();
-  });
-
-  document.getElementById('currency-select').addEventListener('change', (event) => {
-    state.currency = event.target.value;
-    renderPrices();
-  });
-
-  document.getElementById('price-list-select').addEventListener('change', (event) => {
-    state.priceList = event.target.value;
-    renderPrices();
-  });
-
-  document.getElementById('product-search').addEventListener('input', (event) => {
-    state.productSearch = event.target.value.toLowerCase();
-    renderProductGrid();
-  });
-
-  document.getElementById('filter-btn').addEventListener('click', () => {
-    state.filters = {
-      company: document.getElementById('filter-company').value.toLowerCase(),
-      nip: document.getElementById('filter-nip').value.toLowerCase(),
-      order: document.getElementById('filter-order').value.toLowerCase(),
-      status: document.getElementById('filter-status').value,
-    };
-    renderBooths();
-    renderOrdersTable();
-  });
-
-  document.getElementById('hall-select').addEventListener('change', (event) => {
-    state.selectedHallId = event.target.value;
-    const hall = getSelectedHall();
-    if (hall && hall.booths.length > 0) {
-      selectBooth(hall.booths[0].id);
-    }
-    renderBooths();
-  });
-
-  document.getElementById('download-offer').addEventListener('click', () => {
-    alert('Generator PDF zostanie podpięty w kolejnej iteracji.');
-  });
-
-  document.getElementById('save-order').addEventListener('click', () => {
-    alert('Zapisano robocze zamówienie.');
-  });
-
-  document.getElementById('reset-order').addEventListener('click', () => {
-    state.cart = {};
-    renderPrices();
-  });
-
-  document.getElementById('refresh-orders').addEventListener('click', () => {
-    renderOrdersTable(true);
-  });
-
-  ['exhibitor-name', 'exhibitor-nip', 'exhibitor-contact', 'exhibitor-email'].forEach((id) => {
-    document.getElementById(id).addEventListener('input', (event) => {
-      state.exhibitor = {
-        ...state.exhibitor,
-        name: document.getElementById('exhibitor-name').value,
-        nip: document.getElementById('exhibitor-nip').value,
-        contact: document.getElementById('exhibitor-contact').value,
-        email: document.getElementById('exhibitor-email').value,
-      };
-      renderExhibitorCard();
-    });
-  });
-}
-
-function populateEventCategories() {
+function populateEventFilter() {
   const select = document.getElementById('event-category-filter');
+  if (!select) return;
   const categories = [...new Set(events.map((event) => event.category))];
   categories.forEach((category) => {
     const option = document.createElement('option');
@@ -371,323 +375,463 @@ function populateEventCategories() {
     option.textContent = category;
     select.appendChild(option);
   });
-  select.addEventListener('change', () => {
-    renderEventsGrid(select.value);
-  });
+  select.value = 'all';
+  select.addEventListener('change', () => renderEventsGrid(select.value));
 }
 
-function renderAll() {
-  renderEventsGrid();
-  renderHallSelect();
-  renderBooths();
-  renderProductGrid();
-  renderOrdersTable();
-  renderExhibitorCard();
-  syncExhibitorForm();
-  renderCartTable();
-  renderSummaryTable();
-}
-
-function renderEventsGrid(filterValue = getEventFilterValue()) {
+function renderEventsGrid(filterValue = 'all') {
   const grid = document.getElementById('events-grid');
-  const items = events.filter((event) => filterValue === 'all' || event.category === filterValue);
-  grid.innerHTML = items
+  if (!grid) return;
+  const list = events.filter((event) => filterValue === 'all' || event.category === filterValue);
+  grid.innerHTML = list
     .map(
       (event) => `
-        <article class="event-card ${state.selectedEventId === event.id ? 'active' : ''}" data-event-id="${event.id}">
-          <img src="${event.cover}" alt="${event.name}" loading="lazy" />
-          <div class="content">
+      <article class="event-card ${wizardState.eventId === event.id ? 'active' : ''}" data-event-id="${event.id}">
+        <img src="${event.cover}" alt="${event.name}" loading="lazy" />
+        <div class="content">
+          <header>
             <h3>${event.name}</h3>
             <p>${event.subtitle}</p>
-            <small>${event.date} • ${event.location}</small>
-          </div>
-        </article>
-      `,
+          </header>
+          <dl>
+            <div><dt>Data</dt><dd>${event.date}</dd></div>
+            <div><dt>Sezon</dt><dd>${event.season}</dd></div>
+            <div><dt>Hala</dt><dd>${event.location}</dd></div>
+          </dl>
+          <button class="primary" type="button">Wybierz</button>
+        </div>
+      </article>
+    `,
     )
     .join('');
-
-  grid.querySelectorAll('.event-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const eventId = card.getAttribute('data-event-id');
-      state.selectedEventId = eventId;
-      const hallForEvent = halls.find((hall) => hall.eventId === eventId);
-      if (hallForEvent) {
-        state.selectedHallId = hallForEvent.id;
-        if (hallForEvent.booths.length > 0) {
-          selectBooth(hallForEvent.booths[0].id);
-        }
-      }
-      renderHallSelect();
+  grid.querySelectorAll('.event-card button').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const card = event.currentTarget.closest('.event-card');
+      const selectedId = card?.dataset.eventId;
+      if (!selectedId) return;
+      saveWizardState({ eventId: selectedId, hallId: undefined, boothId: undefined, cart: {} });
       renderEventsGrid(filterValue);
-      renderBooths();
+      document.getElementById('events-continue').disabled = false;
     });
+  });
+  document.getElementById('events-continue').disabled = !wizardState.eventId;
+}
+
+function initHallsPage() {
+  ensureEventSelected();
+  renderEventSummary();
+  renderHallGrid();
+  document.getElementById('hall-continue').addEventListener('click', () => {
+    window.location.href = '/app/booth';
   });
 }
 
-function getEventFilterValue() {
-  return document.getElementById('event-category-filter').value || 'all';
+function renderEventSummary() {
+  const container = document.getElementById('event-summary');
+  if (!container) return;
+  const event = getSelectedEvent();
+  container.innerHTML = event
+    ? `
+    <div>
+      <span class="label">Wydarzenie</span>
+      <strong>${event.name}</strong>
+      <p>${event.date} · ${event.location}</p>
+    </div>
+  `
+    : '';
 }
 
-function renderHallSelect() {
-  const hallSelect = document.getElementById('hall-select');
-  const eventHalls = halls.filter((hall) => hall.eventId === state.selectedEventId);
-  hallSelect.innerHTML = eventHalls
-    .map((hall) => `<option value="${hall.id}" ${hall.id === state.selectedHallId ? 'selected' : ''}>${hall.name}</option>`)
+function renderHallGrid() {
+  const grid = document.getElementById('hall-grid');
+  if (!grid) return;
+  const event = getSelectedEvent();
+  const list = halls.filter((hall) => hall.eventId === event?.id);
+  grid.innerHTML = list
+    .map(
+      (hall) => `
+      <article class="hall-card ${wizardState.hallId === hall.id ? 'active' : ''}" data-hall-id="${hall.id}">
+        <header>
+          <h3>${hall.name}</h3>
+          <p>Powierzchnia ${hall.surface}</p>
+        </header>
+        <dl>
+          <div><dt>Magazyn</dt><dd>${hall.storage}</dd></div>
+          <div><dt>ID hali</dt><dd>${hall.id}</dd></div>
+        </dl>
+        <button class="primary" type="button">Wybierz halę</button>
+      </article>
+    `,
+    )
     .join('');
-  if (!eventHalls.some((hall) => hall.id === state.selectedHallId) && eventHalls.length > 0) {
-    state.selectedHallId = eventHalls[0].id;
-  }
+  grid.querySelectorAll('.hall-card button').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const card = event.currentTarget.closest('.hall-card');
+      const hallId = card?.dataset.hallId;
+      if (!hallId) return;
+      saveWizardState({ hallId, boothId: undefined, cart: {} });
+      renderHallGrid();
+      document.getElementById('hall-continue').disabled = false;
+    });
+  });
+  document.getElementById('hall-continue').disabled = !wizardState.hallId;
 }
 
-function renderBooths() {
+function initBoothPage() {
+  ensureHallSelected();
+  renderHallSummary();
+  renderBoothTable();
+  document.getElementById('booth-search').addEventListener('input', renderBoothTable);
+  document.getElementById('booth-status-filter').addEventListener('change', renderBoothTable);
+  document.getElementById('booth-continue').addEventListener('click', () => {
+    window.location.href = '/app/products';
+  });
+}
+
+function renderHallSummary() {
+  const container = document.getElementById('hall-summary');
+  if (!container) return;
+  const event = getSelectedEvent();
   const hall = getSelectedHall();
+  container.innerHTML = `
+    <div>
+      <span class="label">Wydarzenie</span>
+      <strong>${event?.name ?? '—'}</strong>
+      <p>${event?.date ?? ''}</p>
+    </div>
+    <div>
+      <span class="label">Wybrana hala</span>
+      <strong>${hall?.name ?? '—'}</strong>
+      <p>Magazyn: ${hall?.storage ?? '—'}</p>
+    </div>
+  `;
+}
+
+function renderBoothTable() {
   const tbody = document.getElementById('booth-table');
-  if (!hall) {
-    tbody.innerHTML = '<tr><td colspan="6">Brak stoisk dla tej hali.</td></tr>';
-    return;
-  }
-  const filtered = hall.booths.filter(matchesFilters);
+  if (!tbody) return;
+  const hall = getSelectedHall();
+  const boothSet = hallBooths.find((entry) => entry.hallId === hall?.id)?.booths ?? [];
+  const query = document.getElementById('booth-search').value.toLowerCase();
+  const status = document.getElementById('booth-status-filter').value;
+  const filtered = boothSet.filter((booth) => {
+    const matchesQuery =
+      booth.exhibitor.toLowerCase().includes(query) || booth.orderNumber.toLowerCase().includes(query);
+    const matchesStatus = status === 'all' || booth.status === status;
+    return matchesQuery && matchesStatus;
+  });
   tbody.innerHTML = filtered
     .map(
       (booth) => `
-        <tr class="booth-row ${booth.id === state.selectedBoothId ? 'active' : ''}" data-booth-id="${booth.id}">
-          <td>${booth.orderNumber}</td>
-          <td>${booth.boothNumber}</td>
-          <td>${booth.exhibitor}</td>
-          <td>${booth.nip}</td>
-          <td>${translateStatus(booth.status)}</td>
-          <td>${booth.contact.name}<br/><small>${booth.contact.email}</small></td>
-        </tr>
-      `,
+      <tr class="booth-row ${wizardState.boothId === booth.id ? 'active' : ''}" data-booth-id="${booth.id}">
+        <td><input type="radio" name="booth" ${wizardState.boothId === booth.id ? 'checked' : ''} /></td>
+        <td>${booth.orderNumber}</td>
+        <td>${booth.boothNumber}</td>
+        <td>${booth.exhibitor}</td>
+        <td>${booth.nip}</td>
+        <td>${formatStatus(booth.status)}</td>
+        <td>${booth.contact.name}<br /><a href="mailto:${booth.contact.email}">${booth.contact.email}</a></td>
+      </tr>
+    `,
     )
     .join('');
-
-  tbody.querySelectorAll('.booth-row').forEach((row) => {
+  tbody.querySelectorAll('tr').forEach((row) => {
     row.addEventListener('click', () => {
-      const boothId = row.getAttribute('data-booth-id');
-      selectBooth(boothId);
-      renderBooths();
+      const boothId = row.dataset.boothId;
+      if (!boothId) return;
+      saveWizardState({ boothId });
+      renderBoothTable();
+      document.getElementById('booth-continue').disabled = false;
     });
+  });
+  document.getElementById('booth-continue').disabled = !wizardState.boothId;
+}
+
+function formatStatus(status) {
+  switch (status) {
+    case 'nowe':
+      return 'Nowe';
+    case 'w-trakcie':
+      return 'W trakcie';
+    case 'zaakceptowane':
+      return 'Zaakceptowane';
+    default:
+      return status;
+  }
+}
+
+function initProductsPage() {
+  ensureBoothSelected();
+  syncProductControls();
+  renderBoothSummary();
+  renderProductGrid();
+  document.getElementById('currency-select').addEventListener('change', (event) => {
+    saveWizardState({ currency: event.target.value });
+    renderProductGrid();
+  });
+  document.getElementById('price-list-select').addEventListener('change', (event) => {
+    saveWizardState({ priceList: event.target.value });
+    renderProductGrid();
+  });
+  document.getElementById('product-search').addEventListener('input', renderProductGrid);
+  document.getElementById('product-continue').addEventListener('click', () => {
+    window.location.href = '/app/summary';
   });
 }
 
-function matchesFilters(booth) {
-  const { company, nip, order, status } = state.filters;
-  const matchesCompany = !company || booth.exhibitor.toLowerCase().includes(company);
-  const matchesNip = !nip || booth.nip.toLowerCase().includes(nip);
-  const matchesOrder = !order || booth.orderNumber.toLowerCase().includes(order);
-  const matchesStatus = status === 'all' || booth.status === status;
-  return matchesCompany && matchesNip && matchesOrder && matchesStatus;
+function syncProductControls() {
+  document.getElementById('currency-select').value = wizardState.currency;
+  document.getElementById('price-list-select').value = wizardState.priceList;
 }
 
-function selectBooth(boothId) {
-  state.selectedBoothId = boothId;
+function renderBoothSummary() {
+  const container = document.getElementById('booth-summary');
+  if (!container) return;
+  const event = getSelectedEvent();
   const hall = getSelectedHall();
-  const booth = hall?.booths.find((item) => item.id === boothId);
-  if (booth) {
-    state.exhibitor = {
-      name: booth.exhibitor,
-      nip: booth.nip,
-      contact: booth.contact.name,
-      email: booth.contact.email,
-    };
-    syncExhibitorForm();
-    renderExhibitorCard();
-  }
+  const booth = getSelectedBooth();
+  container.innerHTML = `
+    <div>
+      <span class="label">Targi</span>
+      <strong>${event?.name ?? '—'}</strong>
+      <p>${hall?.name ?? ''}</p>
+    </div>
+    <div>
+      <span class="label">Stoisko</span>
+      <strong>${booth?.boothNumber ?? '—'} (${booth?.orderNumber ?? ''})</strong>
+      <p>${booth?.exhibitor ?? ''}</p>
+    </div>
+    <div>
+      <span class="label">Kontakt</span>
+      <strong>${booth?.contact.name ?? '—'}</strong>
+      <p>${booth?.contact.email ?? ''}</p>
+    </div>
+  `;
 }
 
 function renderProductGrid() {
   const grid = document.getElementById('product-grid');
-  const search = state.productSearch;
-  const filteredProducts = products.filter(
-    (product) =>
-      !search ||
-      product.name.toLowerCase().includes(search) ||
-      product.category.toLowerCase().includes(search),
+  if (!grid) return;
+  const query = document.getElementById('product-search').value.toLowerCase();
+  const filtered = products.filter(
+    (product) => product.name.toLowerCase().includes(query) || product.category.toLowerCase().includes(query),
   );
-  grid.innerHTML = filteredProducts
-    .map(
-      (product) => `
+  grid.innerHTML = filtered
+    .map((product) => {
+      const cartItem = wizardState.cart[product.id] ?? { quantity: 0, discount: 0 };
+      const price = formatCurrency(applyCurrency(product.priceList[wizardState.priceList], wizardState.currency));
+      return `
         <article class="product-card" data-product-id="${product.id}">
           <img src="${product.image}" alt="${product.name}" loading="lazy" />
-          <div>
+          <div class="details">
             <h3>${product.name}</h3>
-            <p>${product.category} • Dostępne: ${product.stock}</p>
+            <p class="category">${product.category}</p>
+            <p class="stock">Dostępne: ${product.stock} szt.</p>
+            <p class="price">${price}</p>
           </div>
-          <footer>
-            <strong>${formatPrice(product.priceList[state.priceList])}</strong>
-            <div class="quantity-input" data-product-id="${product.id}">
-              <button type="button" data-action="minus">−</button>
-              <span>${state.cart[product.id] ?? 0}</span>
-              <button type="button" data-action="plus">+</button>
+          <div class="controls">
+            <label class="field compact">
+              <span>Rabat %</span>
+              <input type="number" min="0" max="90" step="1" value="${cartItem.discount ?? 0}" class="discount-input" />
+            </label>
+            <div class="quantity">
+              <button type="button" class="icon-button" data-action="decrease">−</button>
+              <input type="number" min="0" step="1" value="${cartItem.quantity ?? 0}" class="qty-input" />
+              <button type="button" class="icon-button" data-action="increase">+</button>
             </div>
-          </footer>
+          </div>
         </article>
-      `,
-    )
+      `;
+    })
     .join('');
-
-  grid.querySelectorAll('.quantity-input button').forEach((button) => {
-    button.addEventListener('click', () => {
-      const productId = button.parentElement.getAttribute('data-product-id');
-      const delta = button.dataset.action === 'plus' ? 1 : -1;
-      updateCart(productId, delta);
+  grid.querySelectorAll('.product-card').forEach((card) => {
+    const productId = card.dataset.productId;
+    const qtyInput = card.querySelector('.qty-input');
+    const discountInput = card.querySelector('.discount-input');
+    card.querySelector('[data-action="decrease"]').addEventListener('click', () => {
+      updateCart(productId, Math.max(0, Number(qtyInput.value) - 1), Number(discountInput.value));
+    });
+    card.querySelector('[data-action="increase"]').addEventListener('click', () => {
+      updateCart(productId, Number(qtyInput.value) + 1, Number(discountInput.value));
+    });
+    qtyInput.addEventListener('change', () => {
+      updateCart(productId, Number(qtyInput.value), Number(discountInput.value));
+    });
+    discountInput.addEventListener('change', () => {
+      updateCart(productId, Number(qtyInput.value), Number(discountInput.value));
     });
   });
 }
 
-function updateCart(productId, delta) {
-  const current = state.cart[productId] ?? 0;
-  const nextValue = Math.max(0, current + delta);
-  if (nextValue === 0) {
-    delete state.cart[productId];
+function updateCart(productId, quantity, discount) {
+  const nextCart = { ...wizardState.cart };
+  if (quantity <= 0) {
+    delete nextCart[productId];
   } else {
-    state.cart[productId] = nextValue;
+    nextCart[productId] = { quantity, discount: Math.max(0, Math.min(90, discount || 0)) };
   }
-  renderPrices();
-}
-
-function renderPrices() {
-  renderProductGrid();
-  renderCartTable();
-  renderSummaryTable();
-  renderExhibitorCard();
-}
-
-function renderCartTable() {
-  const tbody = document.getElementById('cart-table');
-  const entries = Object.entries(state.cart);
-  if (entries.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3">Brak produktów</td></tr>';
-    return;
+  saveWizardState({ cart: nextCart });
+  if (document.body.dataset.page === 'products') {
+    renderProductGrid();
   }
-  tbody.innerHTML = entries
-    .map(([productId, quantity]) => {
-      const product = products.find((item) => item.id === productId);
-      if (!product) return '';
-      const price = product.priceList[state.priceList];
-      return `
-        <tr>
-          <td>${product.name}</td>
-          <td>${quantity} szt.</td>
-          <td>${formatPrice(price)}</td>
-        </tr>
-      `;
-    })
-    .join('');
 }
 
-function renderSummaryTable() {
-  const tbody = document.getElementById('summary-lines');
-  const entries = Object.entries(state.cart);
-  if (entries.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4">Dodaj produkty, aby zobaczyć podsumowanie.</td></tr>';
-    document.getElementById('summary-total').textContent = `0 ${state.currency}`;
-    return;
-  }
-  let total = 0;
-  tbody.innerHTML = entries
-    .map(([productId, quantity]) => {
-      const product = products.find((item) => item.id === productId);
-      if (!product) return '';
-      const price = product.priceList[state.priceList];
-      const value = price * quantity;
-      total += value;
-      return `
-        <tr>
-          <td>${product.name}</td>
-          <td>${quantity}</td>
-          <td>${formatPrice(price)}</td>
-          <td>${formatPrice(value)}</td>
-        </tr>
-      `;
-    })
-    .join('');
-  document.getElementById('summary-total').textContent = formatPrice(total);
-}
-
-function formatPrice(value) {
-  if (state.currency === 'PLN') {
-    return `${value.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} PLN`;
-  }
-  const converted = value / EURO_RATE;
-  return `${converted.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} EUR`;
-}
-
-function renderOrdersTable(showToast = false) {
-  const tbody = document.getElementById('orders-table');
-  const filtered = previousOrders.filter((order) => {
-    const { company, nip, order: orderFilter, status } = state.filters;
-    const boothMatch = !orderFilter || order.id.toLowerCase().includes(orderFilter);
-    const exhibitorMatch = !company || order.exhibitor.toLowerCase().includes(company);
-    const nipMatch = !nip || order.nip.toLowerCase().includes(nip);
-    const statusMatch = status === 'all' || order.status.toLowerCase().includes(status.replace('-', ' '));
-    return boothMatch && exhibitorMatch && nipMatch && statusMatch;
+function initSummaryPage() {
+  ensureBoothSelected();
+  renderSummarySelection();
+  renderOrderPreview();
+  renderOrdersTable();
+  const notesField = document.getElementById('order-notes');
+  notesField.value = wizardState.notes ?? '';
+  notesField.addEventListener('input', () => {
+    saveWizardState({ notes: notesField.value });
   });
-  tbody.innerHTML = filtered
-    .map(
-      (order) => `
+  document.getElementById('pdf-btn').addEventListener('click', () => {
+    alert('Generator PDF zostanie dodany po zaakceptowaniu wzoru.');
+  });
+  document.getElementById('save-order').addEventListener('click', () => {
+    alert('Zapisano roboczą wersję zamówienia.');
+  });
+}
+
+function renderSummarySelection() {
+  const container = document.getElementById('summary-selection');
+  if (!container) return;
+  const event = getSelectedEvent();
+  const hall = getSelectedHall();
+  const booth = getSelectedBooth();
+  container.innerHTML = `
+    <div>
+      <span class="label">Targi</span>
+      <strong>${event?.name ?? '—'}</strong>
+      <p>${event?.date ?? ''}</p>
+    </div>
+    <div>
+      <span class="label">Hala</span>
+      <strong>${hall?.name ?? '—'}</strong>
+      <p>${hall?.storage ?? ''}</p>
+    </div>
+    <div>
+      <span class="label">Stoisko</span>
+      <strong>${booth?.boothNumber ?? '—'} (${booth?.orderNumber ?? ''})</strong>
+      <p>${booth?.exhibitor ?? ''}</p>
+    </div>
+    <div>
+      <span class="label">Kontakt</span>
+      <strong>${booth?.contact.name ?? '—'}</strong>
+      <p>${booth?.contact.email ?? ''}</p>
+    </div>
+  `;
+}
+
+function renderOrderPreview() {
+  const tbody = document.getElementById('order-preview-body');
+  const totalsBox = document.getElementById('order-totals');
+  const currencyBadge = document.getElementById('order-currency');
+  if (!tbody || !totalsBox) return;
+  const lines = Object.entries(wizardState.cart).map(([productId, info]) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return undefined;
+    const basePrice = product.priceList[wizardState.priceList];
+    const discounted = basePrice * (1 - (info.discount ?? 0) / 100);
+    const converted = applyCurrency(discounted, wizardState.currency);
+    const lineTotal = converted * info.quantity;
+    return {
+      product,
+      quantity: info.quantity,
+      discount: info.discount ?? 0,
+      unitPrice: converted,
+      lineTotal,
+    };
+  });
+  const validLines = lines.filter(Boolean);
+  if (validLines.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5">Dodaj produkty w poprzednim kroku.</td></tr>';
+    totalsBox.textContent = '';
+  } else {
+    tbody.innerHTML = validLines
+      .map(
+        (line) => `
         <tr>
-          <td>${order.id}</td>
-          <td>${order.booth}</td>
-          <td>${order.exhibitor}</td>
-          <td>${order.nip}</td>
-          <td>${order.status}</td>
+          <td>${line.product.name}</td>
+          <td>${line.quantity}</td>
+          <td>${line.discount}%</td>
+          <td>${formatCurrency(line.unitPrice)}</td>
+          <td>${formatCurrency(line.lineTotal)}</td>
         </tr>
       `,
-    )
-    .join('');
-  if (showToast) {
-    showTransientMessage('Odświeżono listę zamówień.');
+      )
+      .join('');
+    const total = validLines.reduce((sum, line) => sum + line.lineTotal, 0);
+    totalsBox.innerHTML = `
+      <div><span>Razem netto</span><strong>${formatCurrency(total)}</strong></div>
+      <div><span>VAT 23%</span><strong>${formatCurrency(total * 0.23)}</strong></div>
+      <div class="grand-total"><span>Razem brutto</span><strong>${formatCurrency(total * 1.23)}</strong></div>
+    `;
+  }
+  if (currencyBadge) {
+    currencyBadge.textContent = `Cennik ${wizardState.priceList} · ${wizardState.currency}`;
   }
 }
 
-function renderExhibitorCard() {
-  const container = document.getElementById('exhibitor-card');
-  const hall = getSelectedHall();
-  const booth = hall?.booths.find((item) => item.id === state.selectedBoothId);
-  const lines = [
-    `<strong>${state.exhibitor.name}</strong>`,
-    `NIP: ${state.exhibitor.nip || '—'}`,
-    `Stoisko: ${booth?.boothNumber ?? '—'} | Zamówienie: ${booth?.orderNumber ?? '—'}`,
-    `Kontakt: ${state.exhibitor.contact ?? '—'}`,
-    state.exhibitor.email ? `Email: ${state.exhibitor.email}` : '',
-  ].filter(Boolean);
-  container.innerHTML = lines.map((line) => `<div>${line}</div>`).join('');
+function renderOrdersTable() {
+  const tbody = document.getElementById('orders-table');
+  if (!tbody) return;
+  tbody.innerHTML = previousOrders
+    .map(
+      (order) => `
+      <tr>
+        <td>${order.id}</td>
+        <td>${order.booth}</td>
+        <td>${order.exhibitor}</td>
+        <td>${order.status}</td>
+      </tr>
+    `,
+    )
+    .join('');
 }
 
-function syncExhibitorForm() {
-  document.getElementById('exhibitor-name').value = state.exhibitor.name ?? '';
-  document.getElementById('exhibitor-nip').value = state.exhibitor.nip ?? '';
-  document.getElementById('exhibitor-contact').value = state.exhibitor.contact ?? '';
-  document.getElementById('exhibitor-email').value = state.exhibitor.email ?? '';
+function ensureEventSelected() {
+  if (!wizardState.eventId) {
+    window.location.href = '/app/events';
+  }
+}
+
+function ensureHallSelected() {
+  ensureEventSelected();
+  if (!wizardState.hallId) {
+    window.location.href = '/app/halls';
+  }
+}
+
+function ensureBoothSelected() {
+  ensureHallSelected();
+  if (!wizardState.boothId) {
+    window.location.href = '/app/booth';
+  }
+}
+
+function getSelectedEvent() {
+  return events.find((event) => event.id === wizardState.eventId);
 }
 
 function getSelectedHall() {
-  return halls.find((hall) => hall.id === state.selectedHallId);
+  return halls.find((hall) => hall.id === wizardState.hallId);
 }
 
-function translateStatus(value) {
-  switch (value) {
-    case 'nowe':
-      return 'Nowe';
-    case 'zaakceptowane':
-      return 'Zaakceptowane';
-    case 'w-trakcie':
-      return 'W trakcie';
-    default:
-      return value;
-  }
+function getSelectedBooth() {
+  const hallId = wizardState.hallId;
+  const hall = hallBooths.find((entry) => entry.hallId === hallId);
+  return hall?.booths.find((booth) => booth.id === wizardState.boothId);
 }
 
-function showTransientMessage(text) {
-  const toast = document.createElement('div');
-  toast.textContent = text;
-  toast.className = 'toast';
-  document.body.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add('visible'));
-  setTimeout(() => {
-    toast.classList.remove('visible');
-    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-  }, 2500);
+function applyCurrency(price, currency) {
+  return currency === 'EUR' ? price / EURO_RATE : price;
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('pl-PL', {
+    style: 'currency',
+    currency: wizardState.currency === 'EUR' ? 'EUR' : 'PLN',
+    minimumFractionDigits: 2,
+  }).format(value);
 }

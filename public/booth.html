@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zamówienia Targi – wybierz stoisko</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body data-page="booth">
+    <div class="app-shell wizard-shell">
+      <header class="app-header">
+        <div class="header-left">
+          <a href="/app/events" class="logo">Zamówienia Targi</a>
+          <nav class="wizard-steps" id="wizard-steps" aria-label="Etapy zamówienia"></nav>
+        </div>
+        <div class="header-actions">
+          <div class="user-pill" id="user-pill">Ładowanie użytkownika…</div>
+          <button class="secondary" id="logout-btn" type="button">Wyloguj</button>
+        </div>
+      </header>
+
+      <main class="wizard-content">
+        <section class="card">
+          <header class="panel-header">
+            <div>
+              <h1>Wybierz stoisko lub wystawcę</h1>
+              <p>Lista pochodzi z bazy stoisk powiązanej z halą. Zaznacz jedną pozycję, aby przejść do konfiguratora.</p>
+            </div>
+            <div class="inline-fields">
+              <label class="field">
+                <span>Filtruj po nazwie</span>
+                <input type="search" id="booth-search" placeholder="np. 3D Phoenix" />
+              </label>
+              <label class="field">
+                <span>Status</span>
+                <select id="booth-status-filter">
+                  <option value="all">Wszystkie</option>
+                  <option value="nowe">Nowe</option>
+                  <option value="w-trakcie">W trakcie</option>
+                  <option value="zaakceptowane">Zaakceptowane</option>
+                </select>
+              </label>
+            </div>
+          </header>
+          <div class="selection-summary" id="hall-summary"></div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Nr zamówienia</th>
+                  <th>Stoisko</th>
+                  <th>Wystawca</th>
+                  <th>NIP</th>
+                  <th>Status</th>
+                  <th>Kontakt</th>
+                </tr>
+              </thead>
+              <tbody id="booth-table"></tbody>
+            </table>
+          </div>
+          <footer class="panel-footer">
+            <button class="secondary" type="button" onclick="window.location.href='/app/halls'">Wstecz</button>
+            <button class="primary" id="booth-continue" type="button" disabled>Konfiguruj produkty</button>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/ui/app.js"></script>
+  </body>
+</html>

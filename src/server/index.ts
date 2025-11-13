@@ -51,7 +51,14 @@ async function requestHandler(req: HttpRequest, res: HttpResponse): Promise<void
     return;
   }
   if (method === 'GET' && (url.pathname === '/app' || url.pathname === '/app/')) {
-    await handleApp(req, res);
+    res.statusCode = 302;
+    res.setHeader('Location', '/app/events');
+    res.end();
+    return;
+  }
+  const appPage = getAppPage(url.pathname);
+  if (method === 'GET' && appPage) {
+    await handleProtectedPage(req, res, appPage);
     return;
   }
   if (method === 'GET' && url.pathname === '/auth/login') {
@@ -86,7 +93,9 @@ async function requestHandler(req: HttpRequest, res: HttpResponse): Promise<void
 async function handleHome(req: HttpRequest, res: HttpResponse): Promise<void> {
   const sessionUser = await resolveSessionUser(req);
   if (sessionUser) {
-    await serveIndexHtml(res);
+    res.statusCode = 302;
+    res.setHeader('Location', '/app/events');
+    res.end();
     return;
   }
 
@@ -97,7 +106,7 @@ async function handleHome(req: HttpRequest, res: HttpResponse): Promise<void> {
   res.end(body);
 }
 
-async function handleApp(req: HttpRequest, res: HttpResponse): Promise<void> {
+async function handleProtectedPage(req: HttpRequest, res: HttpResponse, pageFile: string): Promise<void> {
   const sessionUser = await resolveSessionUser(req);
   if (!sessionUser) {
     res.statusCode = 302;
@@ -105,7 +114,7 @@ async function handleApp(req: HttpRequest, res: HttpResponse): Promise<void> {
     res.end();
     return;
   }
-  await serveIndexHtml(res);
+  await serveAppHtml(res, pageFile);
 }
 
 async function handleLogin(res: HttpResponse): Promise<void> {
@@ -307,9 +316,27 @@ function escapeHtml(value: string): string {
   });
 }
 
-async function serveIndexHtml(res: HttpResponse): Promise<void> {
+function getAppPage(pathname: string): string | undefined {
+  const normalized = pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  switch (normalized) {
+    case '/app/events':
+      return 'index.html';
+    case '/app/halls':
+      return 'halls.html';
+    case '/app/booth':
+      return 'booth.html';
+    case '/app/products':
+      return 'products.html';
+    case '/app/summary':
+      return 'summary.html';
+    default:
+      return undefined;
+  }
+}
+
+async function serveAppHtml(res: HttpResponse, fileName: string): Promise<void> {
   try {
-    const html = await readFile(path.join(publicDir, 'index.html'), 'utf8');
+    const html = await readFile(path.join(publicDir, fileName), 'utf8');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.statusCode = 200;
     res.end(html);

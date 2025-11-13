@@ -68,24 +68,27 @@ Serwer logowania wystawia też endpoint `GET /api/session`, który pozwala front
 
 ## Interfejs WWW (konfigurator zamówień)
 
-Zakładka `http://localhost:4300/app` udostępnia pierwszą wersję graficznego panelu, który odzwierciedla układ z makiet: filtry po lewej, główny konfigurator na środku oraz karta wystawcy po prawej. Strona ładuje bieżącą sesję przez `GET /api/session`, dzięki czemu w nagłówku widać zalogowanego użytkownika.
+Po zalogowaniu (lub przy ustawionym `DEMO_MODE=true`) dostępna jest wieloetapowa ścieżka pod adresem `http://localhost:4300/app/events`. Każdy krok to osobna strona z dedykowanym widokiem i stanem zapisywanym w `sessionStorage`, dzięki czemu można wrócić do wcześniejszych etapów bez utraty danych.
 
-### Jak uruchomić
+### Jak uruchomić tryb testowy
 
 ```bash
-DEMO_MODE=true \  # opcjonalnie, by pominąć logowanie
+DEMO_MODE=true \  # opcjonalnie, by pominąć logowanie i użyć konta demo
 npm run auth:server
-# następnie otwórz http://localhost:4300/ i przejdź do zakładki
+# po uruchomieniu odwiedź http://localhost:4300/app/events
 ```
 
-### Dostępne widoki
+Do testu potrzebny jest plik `.env` z konfiguracją Microsoft/Airtable (jak w sekcji „Konfiguracja”). W trybie demo wystarczy `SESSION_SECRET` oraz zmienna `DEMO_MODE=true`, aby backend udostępnił widoki bez logowania.
 
-- **Filtry i tabela zamówień** – szybkie wyszukiwanie po nazwie firmy, NIP‑ie, numerze zamówienia oraz statusie. Wynik prezentowany jest w tabeli „Zamówienia”, którą można odświeżyć przyciskiem.
-- **Wydarzenia i hale** – kafle wydarzeń z opisem, datą i ilustracją, selektor branży oraz zakładka „Zestaw stoisk” pokazująca przypisane hale i rekordy (nazwa targów, hala, numer zamówienia, stoisko, wystawca, statusy, kontakt, NIP).
-- **Konfigurator produktów** – karta z filtrem tekstowym, wyborem waluty (PLN/EUR) oraz selektorem cennika A/B/C. Każdy produkt ma kontrolkę +/- do ustawiania ilości, a ceny przeliczają się zgodnie z cennikiem oraz walutą.
-- **Podsumowanie i karta wystawcy** – formularz danych wystawcy (nazwa, NIP, osoba kontaktowa, e-mail), lista pozycji zamówienia oraz tabela sumaryczna. Obok widać „Kartę wystawcy” z informacjami o stoisku i kontakcie oraz mini tabelę z produktami.
+### Etapy konfiguratora
 
-Przyciski „Eksportuj PDF”, „Zapisz i kontynuuj” oraz komunikaty toastowe działają jako placeholdery – backend można do nich podpiąć w kolejnych iteracjach. Aktualnie wykorzystywany jest przykładowy zestaw wydarzeń, stoisk i produktów, aby szybko zweryfikować układ i przepływ pracy.
+1. **Targi (`/app/events`)** – kafle wydarzeń z filtrem po branży. Kliknięcie przycisku „Wybierz” zapisuje docelowe wydarzenie i aktywuje przycisk przejścia do hal.
+2. **Hala (`/app/halls`)** – lista hal powiązanych z wybranym eventem (powierzchnia, magazyn). Zmiana hali resetuje dalsze kroki, aby zamówienie pozostało spójne z magazynem.
+3. **Stoisko (`/app/booth`)** – tabela z bazą stoisk zawierająca kolumny: nazwa targów, hala, numer zamówienia, stoisko, wystawca, status ogólny/szczegółowy, NIP, osoba kontaktowa i adres e-mail. Można filtrować po nazwie oraz statusie, a wybór realizowany jest przez zaznaczenie wiersza.
+4. **Produkty (`/app/products`)** – konfigurator z przełącznikiem waluty (PLN/EUR), cennikiem (A/B/C), filtrem tekstowym oraz kartami produktów. Każdy produkt ma kontrolę ilości i pole rabatu procentowego, które wpływają na wartości w koszyku.
+5. **Podsumowanie (`/app/summary`)** – tabela pozycji zamówienia, obliczenia netto/VAT/brutto, pole „Uwagi do zamówienia”, szybki podgląd bieżących zamówień oraz akcje „Zapisz roboczo” i „Generuj ofertę PDF” (placeholder przed podpięciem właściwego generatora dokumentu).
+
+Przykładowe dane targów, hal, stoisk i produktów znajdują się w `public/app.js`, dzięki czemu całą ścieżkę można przejść bez dodatkowych integracji. Po przygotowaniu API wystarczy podmienić źródło danych w tym pliku.
 
 ## Rejestr hal i baza stoisk
 
