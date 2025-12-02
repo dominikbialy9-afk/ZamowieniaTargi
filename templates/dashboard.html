@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="grid">
+    {% if can_import %}
+    <div class="card">
+        <h2>Import danych</h2>
+        <form method="post" action="{{ url_for('import_data', data_type='events') }}" enctype="multipart/form-data">
+            <label>Wydarzenia (CSV/XLSX)</label>
+            <input type="file" name="file" required>
+            <button class="btn" type="submit">Importuj wydarzenia</button>
+        </form>
+        <form method="post" action="{{ url_for('import_data', data_type='halls') }}" enctype="multipart/form-data">
+            <label>Hale (CSV/XLSX)</label>
+            <input type="file" name="file" required>
+            <button class="btn" type="submit">Importuj hale</button>
+        </form>
+        <form method="post" action="{{ url_for('import_data', data_type='products') }}" enctype="multipart/form-data">
+            <label>Produkty (CSV/XLSX)</label>
+            <input type="file" name="file" required>
+            <button class="btn" type="submit">Importuj produkty</button>
+        </form>
+        <form method="post" action="{{ url_for('import_data', data_type='booths') }}" enctype="multipart/form-data">
+            <label>Stoiska (CSV/XLSX)</label>
+            <input type="file" name="file" required>
+            <button class="btn" type="submit">Importuj stoiska</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <h2>Eksport</h2>
+        <a class="btn" href="{{ url_for('export_orders') }}">Eksport zamówień</a>
+        <a class="btn secondary" href="{{ url_for('export_stocks') }}">Eksport stanów</a>
+        {% if current_user.role == 'admin' %}
+        <a class="btn secondary" href="{{ url_for('export_logs') }}">Eksport logów</a>
+        {% endif %}
+    </div>
+
+    {% if can_edit %}
+    <div class="card">
+        <h2>Dodaj wydarzenie</h2>
+        <form method="post" action="{{ url_for('create_event') }}">
+            <label>Nazwa</label>
+            <input name="name" required>
+            <label>Data</label>
+            <input name="date">
+            <label>Sezon</label>
+            <input name="season">
+            <button class="btn" type="submit">Dodaj</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Dodaj halę</h2>
+        <form method="post" action="{{ url_for('create_hall') }}">
+            <label>Wydarzenie</label>
+            <select name="event_id">
+                {% for event in events %}
+                    <option value="{{ event.id }}">{{ event.name }}</option>
+                {% endfor %}
+            </select>
+            <label>Numer</label>
+            <input name="number" required>
+            <label>Opis</label>
+            <input name="description">
+            <button class="btn" type="submit">Dodaj</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Dodaj stoisko</h2>
+        <form method="post" action="{{ url_for('create_booth') }}">
+            <label>Hala</label>
+            <select name="hall_id">
+                {% for hall in halls %}
+                    <option value="{{ hall.id }}">{{ hall.number }} ({{ hall.event.name }})</option>
+                {% endfor %}
+            </select>
+            <label>Wystawca</label>
+            <input name="exhibitor" required>
+            <label>Numer stoiska</label>
+            <input name="booth_number">
+            <label>Kontakt</label>
+            <input name="contact">
+            <button class="btn" type="submit">Dodaj</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Dodaj produkt</h2>
+        <form method="post" action="{{ url_for('create_product') }}">
+            <label>Nazwa</label>
+            <input name="name" required>
+            <label>Cena</label>
+            <input name="price" type="number" step="0.01" required>
+            <label>Opis</label>
+            <input name="description">
+            <label>Stan</label>
+            <input name="stock" type="number" min="0" required>
+            <button class="btn" type="submit">Dodaj</button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if can_orders %}
+    <div class="card" style="grid-column: span 2;">
+        <h2>Nowe zamówienie / oferta</h2>
+        <form method="post" action="{{ url_for('create_order') }}">
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div>
+                    <label>Wydarzenie</label>
+                    <select name="event_id">
+                        {% for event in events %}
+                            <option value="{{ event.id }}">{{ event.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Hala</label>
+                    <select name="hall_id">
+                        {% for hall in halls %}
+                            <option value="{{ hall.id }}">{{ hall.number }} ({{ hall.event.name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Stoisko</label>
+                    <select name="booth_id">
+                        {% for booth in booths %}
+                            <option value="{{ booth.id }}">{{ booth.exhibitor }} ({{ booth.booth_number }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="Draft">Szkic</option>
+                        <option value="Offer">Oferta PDF</option>
+                        <option value="Finalized">Zamówienie finalne</option>
+                    </select>
+                </div>
+            </div>
+            <table style="margin-top:12px;">
+                <tr><th>Produkt</th><th>Cena</th><th>Stan</th><th>Ilość</th></tr>
+                {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ '%.2f'|format(product.price) }} PLN</td>
+                        <td>{{ product.stock }}</td>
+                        <td><input type="number" min="0" name="product_{{ product.id }}" style="width:100px"></td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <button class="btn" type="submit">Zapisz</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="card" style="grid-column: span 2;">
+        <h2>Zamówienia</h2>
+        <table>
+            <tr><th>ID</th><th>Wydarzenie</th><th>Stoisko</th><th>Status</th><th>Wartość brutto</th><th>PDF</th><th>Podpisany</th></tr>
+            {% for order in orders %}
+                <tr>
+                    <td>#{{ order.id }}</td>
+                    <td>{{ order.event.name }}</td>
+                    <td>{{ order.booth.exhibitor }}</td>
+                    <td><span class="badge">{{ order.status }}</span></td>
+                    <td>{{ '%.2f'|format(order.total_gross) }} PLN</td>
+                    <td>
+                        {% if order.pdf_path %}
+                            <a class="btn secondary" href="{{ url_for('download_pdf', order_id=order.id) }}">PDF</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if can_orders %}
+                        <form method="post" action="{{ url_for('upload_signed', order_id=order.id) }}" enctype="multipart/form-data">
+                            <input type="file" name="signed_file" accept="application/pdf,image/*">
+                            <button class="btn" type="submit">Wyślij</button>
+                        </form>
+                        {% if order.signed_document %}
+                            <small>Zapisano</small>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    {% if can_stock %}
+    <div class="card" style="grid-column: span 2;">
+        <h2>Stany magazynowe</h2>
+        <table>
+            <tr><th>Produkt</th><th>Opis</th><th>Stan</th><th>Aktualizacja</th></tr>
+            {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.description }}</td>
+                    <td>{{ product.stock }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('update_stock', product_id=product.id) }}">
+                            <input type="number" name="stock" min="0" value="{{ product.stock }}" style="width:100px">
+                            <button class="btn" type="submit">Zapisz</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="card" style="grid-column: span 2;">
+        <h2>Logi</h2>
+        <table>
+            <tr><th>Użytkownik</th><th>Akcja</th><th>Szczegóły</th><th>Czas</th></tr>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ log.user }}</td>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.details }}</td>
+                    <td>{{ log.timestamp }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endblock %}

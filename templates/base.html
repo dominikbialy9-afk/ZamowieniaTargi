@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zamówienia Targi</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
+        header { background: #1b4b72; color: #fff; padding: 12px 20px; }
+        nav a { color: #fff; margin-right: 12px; text-decoration: none; font-weight: bold; }
+        .container { padding: 20px; }
+        .card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 16px; }
+        .card h2 { margin-top: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        label { display:block; margin-top: 8px; }
+        input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+        th { background: #efefef; }
+        .btn { display: inline-block; padding: 8px 12px; background: #1b4b72; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; margin-top: 8px; }
+        .btn.secondary { background: #555; }
+        .btn.danger { background: #b00020; }
+        .badge { background: #1b4b72; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .alert { padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .alert.success { background: #e6f4ea; color: #256029; }
+        .alert.danger { background: #fdecea; color: #a61b2b; }
+        .alert.info { background: #e8f1fb; color: #1a73e8; }
+        .alert.warning { background: #fff4e5; color: #a35d00; }
+        @media (max-width: 600px) { table { display: block; overflow-x: auto; } }
+    </style>
+</head>
+<body>
+<header>
+    <nav>
+        <span>Zamówienia Targi</span>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}">Panel</a>
+            <a href="{{ url_for('logout') }}">Wyloguj ({{ current_user.username }})</a>
+        {% endif %}
+    </nav>
+</header>
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card" style="max-width:360px;margin:40px auto;">
+    <h2>Logowanie</h2>
+    <form method="post">
+        <label>Login</label>
+        <input type="text" name="username" required>
+        <label>Hasło</label>
+        <input type="password" name="password" required>
+        <button class="btn" type="submit">Zaloguj</button>
+    </form>
+    <p style="margin-top:12px;font-size:13px;color:#666;">Dostępne konta: admin/admin, seller/seller, kierownik/kierownik, guest/guest.</p>
+</div>
+{% endblock %}
